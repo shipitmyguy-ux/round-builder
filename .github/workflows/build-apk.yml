@@ -3,9 +3,13 @@ on:
   push:
     branches: [ main ]
   workflow_dispatch:
+concurrency:
+  group: round-builder-debug
+  cancel-in-progress: true
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -15,8 +19,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - run: gradle assembleDebug
+          cache-read-only: false
+      - run: gradle assembleDebug --build-cache --parallel
       - uses: actions/upload-artifact@v4
         with:
           name: round-builder-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+          compression-level: 0
+          retention-days: 7
