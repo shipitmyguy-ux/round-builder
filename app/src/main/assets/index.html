@@ -10,7 +10,17 @@ const ground=new THREE.Mesh(new THREE.BoxGeometry(16,.35,16),new THREE.MeshLambe
 const grid=new THREE.GridHelper(16,16,0x315b32,0x60995a);grid.position.y=.001;scene.add(grid);
 const colors={grass:0x69b650,wood:0xa36b3d,stone:0x8c9298,brick:0xb85d4e,water:0x43a9e8,plant:0x3f8f45,bed:0xc96f86,chair:0xb47a45,table:0x8d5a32};let material='grass',remove=false,blocks=[];
 const geo=new THREE.BoxGeometry(1,1,1);
-function addBlock(x,y,z,type='grass',autos=true){x=Math.round(x);y=Math.floor(y)+.5;z=Math.round(z);if(blocks.some(b=>b.position.x===x&&b.position.y===y&&b.position.z===z))return;const transparent=type==='water'||type==='plant';let b=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:colors[type]||colors.grass,transparent,opacity:type==='water'?.68:type==='plant'?.88:1}));b.position.set(x,y,z);b.userData={block:true,type};scene.add(b);blocks.push(b);if(autos)saveGame(true)}
+function part(g,c,x,y,z,parent){const m=new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:c}));m.position.set(x,y,z);parent.add(m);return m}
+function makeObject(type){
+ const g=new THREE.Group(), box=(sx,sy,sz,c,x,y,z)=>part(new THREE.BoxGeometry(sx,sy,sz),c,x,y,z,g);
+ if(type==='plant'){box(.52,.32,.52,0x8d5a32,0,-.32,0);box(.18,.55,.18,0x3f8f45,0,.05,0);box(.55,.16,.18,0x55aa55,0,.18,0);box(.18,.16,.55,0x4b9d4d,0,.32,0)}
+ else if(type==='bed'){box(.9,.28,.95,0xa36b3d,0,-.28,0);box(.86,.24,.9,0xc96f86,0,.0,0);box(.72,.16,.32,0xf4f0df,0,.2,-.25)}
+ else if(type==='chair'){box(.72,.18,.72,0xb47a45,0,-.02,0);box(.14,.55,.14,0x8d5a32,-.26,-.3,-.26);box(.14,.55,.14,0x8d5a32,.26,-.3,-.26);box(.14,.55,.14,0x8d5a32,-.26,-.3,.26);box(.14,.55,.14,0x8d5a32,.26,-.3,.26);box(.72,.68,.14,0xb47a45,0,.34,.29)}
+ else if(type==='table'){box(.95,.18,.95,0x8d5a32,0,.25,0);[[-.34,-.25,-.34],[.34,-.25,-.34],[-.34,-.25,.34],[.34,-.25,.34]].forEach(p=>box(.14,.7,.14,0x704423,...p))}
+ else return null;
+ return g;
+}
+function addBlock(x,y,z,type='grass',autos=true){x=Math.round(x);y=Math.floor(y)+.5;z=Math.round(z);if(blocks.some(b=>b.position.x===x&&b.position.y===y&&b.position.z===z))return;let b=makeObject(type);if(!b){const transparent=type==='water';b=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:colors[type]||colors.grass,transparent,opacity:type==='water'?.68:1}))}b.position.set(x,y,z);b.userData={block:true,type};b.traverse(o=>o.userData.owner=b);scene.add(b);blocks.push(b);if(autos)saveGame(true)}
 function clearBlocks(){blocks.forEach(b=>scene.remove(b));blocks=[]}
 function starter(){clearBlocks();[[-3,.5,-2,'wood'],[-3,1.5,-2,'wood'],[-3,2.5,-2,'grass'],[-2,2.5,-2,'grass'],[-4,2.5,-2,'grass'],[2,.5,-3,'stone'],[3,.5,-3,'stone'],[2,.5,-2,'stone']].forEach(v=>addBlock(...v,false))}
 function state(){return {v:2,blocks:blocks.map(b=>({x:b.position.x,y:b.position.y,z:b.position.z,type:b.userData.type}))}}
@@ -23,10 +33,10 @@ document.querySelectorAll('.mat').forEach(x=>x.onclick=()=>{document.querySelect
 document.getElementById('remove').onclick=e=>{remove=!remove;e.currentTarget.classList.toggle('sel',remove)};
 document.getElementById('save').onclick=()=>saveGame();document.getElementById('load').onclick=loadGame;document.getElementById('new').onclick=()=>{starter();saveGame(true);flash('New world')};
 const ray=new THREE.Raycaster(),mouse=new THREE.Vector2();let down=null,drag=false;
-function hit(ev){let r=ren.domElement.getBoundingClientRect();mouse.set((ev.clientX-r.left)/r.width*2-1,-(ev.clientY-r.top)/r.height*2+1);ray.setFromCamera(mouse,cam);return ray.intersectObjects([ground,...blocks],false)[0]}
+function hit(ev){let r=ren.domElement.getBoundingClientRect();mouse.set((ev.clientX-r.left)/r.width*2-1,-(ev.clientY-r.top)/r.height*2+1);ray.setFromCamera(mouse,cam);const h=ray.intersectObjects([ground,...blocks],true)[0];if(h&&h.object.userData.owner){h.owner=h.object.userData.owner}return h}
 ren.domElement.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY};drag=false;ren.domElement.setPointerCapture(e.pointerId)});
 ren.domElement.addEventListener('pointermove',e=>{if(!down)return;let dx=e.clientX-down.x,dy=e.clientY-down.y;if(Math.hypot(dx,dy)>7)drag=true;if(drag){yaw-=e.movementX*.008;pitch=Math.max(.2,Math.min(1.25,pitch+e.movementY*.008))}});
-ren.domElement.addEventListener('pointerup',e=>{down=null;if(drag)return;const h=hit(e);if(!h)return;if(h.object.userData.block&&remove){scene.remove(h.object);blocks=blocks.filter(b=>b!==h.object);saveGame(true);return}let p;if(h.object.userData.ground)p=new THREE.Vector3(Math.round(h.point.x),.5,Math.round(h.point.z));else{p=h.object.position.clone().add(h.face.normal);p.x=Math.round(p.x);p.y=Math.floor(p.y)+.5;p.z=Math.round(p.z)}if(Math.abs(p.x)<=7&&Math.abs(p.z)<=7&&p.y>=.5&&p.y<=7.5)addBlock(p.x,p.y,p.z,material)});
+ren.domElement.addEventListener('pointerup',e=>{down=null;if(drag)return;const h=hit(e);if(!h)return;const owner=h.owner||h.object;if(owner.userData.block&&remove){scene.remove(owner);blocks=blocks.filter(b=>b!==owner);saveGame(true);return}let p;if(h.object.userData.ground)p=new THREE.Vector3(Math.round(h.point.x),.5,Math.round(h.point.z));else{p=owner.position.clone().add(h.face.normal);p.x=Math.round(p.x);p.y=Math.floor(p.y)+.5;p.z=Math.round(p.z)}if(Math.abs(p.x)<=7&&Math.abs(p.z)<=7&&p.y>=.5&&p.y<=7.5)addBlock(p.x,p.y,p.z,material)});
 function camera(){cam.position.set(target.x+Math.sin(yaw)*Math.cos(pitch)*dist,target.y+Math.sin(pitch)*dist+1,target.z+Math.cos(yaw)*Math.cos(pitch)*dist);cam.lookAt(target.x,target.y+1,target.z)}
 function loop(){requestAnimationFrame(loop);camera();ren.render(scene,cam)}loop();
 addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();ren.setSize(innerWidth,innerHeight)});addEventListener('pagehide',()=>saveGame(true));document.addEventListener('visibilitychange',()=>{if(document.hidden)saveGame(true)});
