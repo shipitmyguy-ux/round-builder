@@ -6,7 +6,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9bd8ff;fon
 #cross{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:white;font-size:26px;text-shadow:0 1px 3px #000;pointer-events:none}.hint{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);background:#111a;color:#fff;border-radius:10px;padding:5px 9px;font-size:11px;white-space:nowrap}.heart{position:absolute;left:50%;top:48%;font-size:28px;animation:h .8s forwards}@keyframes h{to{opacity:0;transform:translateY(-80px) scale(1.3)}}
 </style></head><body><div id="ui"><div id="bar"></div><div id="joy"><div id="knob"></div></div><div id="actions"><button id="use" class="act">USE</button><button id="jump" class="act jump">JUMP</button></div><div id="cross">＋</div><div class="hint">Stick: move · Drag: look · Tap: build/interact</div><div id="hearts"></div></div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.min.js"></script><script>
-const U=1.5,W=18,L=W*U/2,EYE=U*1.7;
+const U=1.5,W=64,L=W*U/2,EYE=U*1.7;
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x9bd8ff);
 const cam=new THREE.PerspectiveCamera(68,innerWidth/innerHeight,.08,120);
 const ren=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});ren.setSize(innerWidth,innerHeight);ren.setPixelRatio(Math.min(devicePixelRatio||1,1.5));document.body.prepend(ren.domElement);
