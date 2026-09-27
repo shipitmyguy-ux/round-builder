@@ -55,8 +55,8 @@ function makeModel(t){const g=new THREE.Group();
    for(const x of[-.27,.27])for(const z of[-.18,.18])box(g,.12,.42,.12,t==='cow'?0x4d4038:c,x,-.47,z);
  } else return null;return g}
 function facePlayer(b){b.rotation.y=Math.round(Math.atan2(px-b.position.x,pz-b.position.z)/(Math.PI/2))*(Math.PI/2)}
-function snap(v){return Math.floor(v/U)*U+U/2}function occupied(x,y,z){return blocks.some(b=>Math.abs(b.position.x-x)<.01&&Math.abs(b.position.y-y)<.01&&Math.abs(b.position.z-z)<.01)}
-function add(x,y,z,t=selected,save=true){x=snap(x);y=snap(y);z=snap(z);if(Math.abs(x)>L-U/2||Math.abs(z)>L-U/2||occupied(x,y,z))return;let b;if(solidColors[t])b=new THREE.Mesh(cubeGeo,mats[t]);else b=makeModel(t);if(!b)return;b.position.set(x,y,z);b.userData={block:1,type:t,solid:!!solidColors[t]||['stairs','door','fence'].includes(t)};b.traverse(o=>o.userData.owner=b);if(!solidColors[t])facePlayer(b);scene.add(b);blocks.push(b);if(save)saveGame(true)}
+function isSolidType(t){return !['water','glass','rug','plant'].includes(t)}function isFullCubeType(t){return !!solidColors[t]}function snap(v){return Math.floor(v/U)*U+U/2}function occupied(x,y,z){return blocks.some(b=>Math.abs(b.position.x-x)<.01&&Math.abs(b.position.y-y)<.01&&Math.abs(b.position.z-z)<.01)}
+function add(x,y,z,t=selected,save=true){x=snap(x);y=snap(y);z=snap(z);if(Math.abs(x)>L-U/2||Math.abs(z)>L-U/2||occupied(x,y,z))return;let b;if(solidColors[t])b=new THREE.Mesh(cubeGeo,mats[t]);else b=makeModel(t);if(!b)return;b.position.set(x,y,z);b.userData={block:1,type:t,solid:isSolidType(t)};b.traverse(o=>o.userData.owner=b);if(!solidColors[t])facePlayer(b);scene.add(b);blocks.push(b);if(save)saveGame(true)}
 function erase(b){scene.remove(b);blocks.splice(blocks.indexOf(b),1);saveGame(true)}
 function clear(){blocks.forEach(b=>scene.remove(b));blocks.length=0}
 function state(){return {v:4,player:{px,pz,feet,yaw,pitch},blocks:blocks.map(b=>({x:b.position.x,y:b.position.y,z:b.position.z,type:b.userData.type,r:b.rotation.y}))}}
@@ -74,7 +74,18 @@ const J=document.getElementById('joy'),K=document.getElementById('knob');let jid
 document.getElementById('jump').addEventListener('pointerdown',e=>{e.preventDefault();if(onGround){vy=U*.17;onGround=false}});
 document.getElementById('use').addEventListener('pointerdown',e=>{e.preventDefault();ray.setFromCamera(new THREE.Vector2(0,0),cam);const h=ray.intersectObjects(blocks,true)[0];if(h&&h.distance<U*3)interact(h.object.userData.owner||h.object)});
 
+function collidesAt(x,z,feetY){
+  const r=U*.28;
+  for(const b of blocks){
+    if(!b.userData.solid)continue;
+    const halfX=(b.userData.type==='couch'||b.userData.type==='bed'||b.userData.type==='bathtub'||b.userData.type==='table')?U*.75:U*.48;
+    const halfZ=(b.userData.type==='couch'||b.userData.type==='bed'||b.userData.type==='bathtub'||b.userData.type==='table')?U*.5:U*.48;
+    const bottom=b.position.y-U*.5, top=b.position.y+U*.9;
+    if(feetY<top && feetY+EYE>bottom && Math.abs(x-b.position.x)<halfX+r && Math.abs(z-b.position.z)<halfZ+r)return true;
+  }
+  return false
+}
 function floorHeight(x,z){let best=0;for(const b of blocks){if(!b.userData.solid)continue;if(Math.abs(x-b.position.x)<U*.43&&Math.abs(z-b.position.z)<U*.43){const top=b.position.y+U/2;if(top<=feet+U*.7&&top>best)best=top}}return best}
-function loop(){requestAnimationFrame(loop);const sp=U*.05,fx=-Math.sin(yaw),fz=-Math.cos(yaw),rx=Math.cos(yaw),rz=-Math.sin(yaw);px+=(-my*fx+mx*rx)*sp;pz+=(-my*fz+mx*rz)*sp;px=Math.max(-L+U/2,Math.min(L-U/2,px));pz=Math.max(-L+U/2,Math.min(L-U/2,pz));vy-=U*.008;feet+=vy;const floor=floorHeight(px,pz);if(feet<=floor){feet=floor;vy=0;onGround=true}cam.position.set(px,feet+EYE,pz);cam.rotation.order='YXZ';cam.rotation.y=yaw;cam.rotation.x=pitch;ren.render(scene,cam)}loop();
+function loop(){requestAnimationFrame(loop);const sp=U*.05,fx=-Math.sin(yaw),fz=-Math.cos(yaw),rx=Math.cos(yaw),rz=-Math.sin(yaw);const dx=(-my*fx+mx*rx)*sp,dz=(-my*fz+mx*rz)*sp;let nx=Math.max(-L+U/2,Math.min(L-U/2,px+dx));if(!collidesAt(nx,pz,feet))px=nx;let nz=Math.max(-L+U/2,Math.min(L-U/2,pz+dz));if(!collidesAt(px,nz,feet))pz=nz;vy-=U*.008;feet+=vy;const floor=floorHeight(px,pz);if(feet<=floor){feet=floor;vy=0;onGround=true}cam.position.set(px,feet+EYE,pz);cam.rotation.order='YXZ';cam.rotation.y=yaw;cam.rotation.x=pitch;ren.render(scene,cam)}loop();
 addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();ren.setSize(innerWidth,innerHeight)});addEventListener('pagehide',()=>saveGame(true));document.addEventListener('visibilitychange',()=>{if(document.hidden)saveGame(true)});
 </script></body></html>
