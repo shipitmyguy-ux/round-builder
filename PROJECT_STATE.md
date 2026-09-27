@@ -62,3 +62,24 @@ Petting animals should show floating heart particles.
 
 ## Resume instruction
 When resuming work, preserve all content above unless explicitly asked to remove or replace it.
+
+
+## Latest saved gameplay state
+- Plot size: 64×64 blocks.
+- Character mode:
+  - left thumbstick moves
+  - drag to look
+  - JUMP button
+  - USE button
+  - solid collision with blocks/furniture
+- Leave Character Mode:
+  - character stays where they were
+  - joystick / USE / JUMP hidden
+  - drag = orbit/look
+  - single tap = build
+  - REMOVE + single tap = remove
+  - double-tap = move camera focus to tapped block/object/ground
+  - Enter Character Mode returns to the saved character position
+- Remove mode now works on beds and interactive furniture.
+- Trees and non-cube object placement repaired.
+- Full block / furniture / animal palette remains required and must not be trimmed.
