@@ -16,7 +16,7 @@ Requests come from children, so keep changes tiny and visible.
 2. Keep the full block/furniture/animal palette; never trim content for speed.
 3. Do not hardcode model data in game code if it belongs in `model-library.js`.
 4. No new dependencies or build tooling. A JS syntax error blanks the game.
-5. Content requests go to `main`; bigger code changes go on a branch with a pull request.
+5. Every change is committed straight to `main` after the checks pass; no pull requests (Mike decided 2026-10-20).
 
 ## Checking
 Serve the folder (`python3 -m http.server`) and open `index.html`. The password gate is skipped by setting localStorage `familyGamesUnlock` to the hash in `gate.js` (`e9ca42b535c4046696d89181ecb0964bf863dd96be1a8114fb78e255ede5d8b6`).
